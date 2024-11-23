@@ -1,0 +1,1 @@
+-e git+ssh://git@github.com/ProjectBM/AoCLibrary.git@f80215b26245ddb02e8ff23a1b3cc4b992d60c7b#egg=AoCUtils
