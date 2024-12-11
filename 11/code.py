@@ -1,4 +1,5 @@
 from collections import Counter, defaultdict
+from functools import cache
 from AoCUtils.utils import *
 
 
@@ -12,6 +13,26 @@ def part_one():
 
 def part_two():
     return solve("input2.txt", TIME_P2)
+
+    # Recursive/Memoization Solution Below
+    # stones = list(map(int, parse_input("input2.txt")[0].split()))
+
+    # total = 0
+    # for stone in stones:
+    #     total += recurse_solve(0, stone)
+    # return total
+
+
+@cache
+def recurse_solve(time, stone):
+    if time >= TIME_P2:
+        return 1
+
+    total = 0
+    transformed_stones = rules(stone)
+    for transformed_stone in transformed_stones:
+        total += recurse_solve(time + 1, transformed_stone)
+    return total
 
 
 def solve(file_name, time_limit):
