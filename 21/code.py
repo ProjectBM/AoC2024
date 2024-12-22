@@ -1,15 +1,13 @@
 from enum import Enum
 from functools import cache
+import math
 from AoCUtils.utils import *
-import itertools
 
 
 UP = (-1, 0)
 DOWN = (1, 0)
 LEFT = (0, -1)
 RIGHT = (0, 1)
-
-DIRS = [UP, DOWN, LEFT, RIGHT]
 
 NUMERIC = {
     "7": (0, 0),
@@ -41,61 +39,53 @@ class Type(Enum):
 
 def part_one():
     codes = parse_input("input1.txt")
-    numeric_codes = [int(code[:-1]) for code in codes]
-    max_robots = 2
-    complexity = 0
-    for i, code in enumerate(codes):
-        print(code)
-        code = solve(Type.NUMERIC, max_robots, 0, tuple(code))
-        print(f"{len(code)} * {numeric_codes[i]}")
-        complexity += len(code) * numeric_codes[i]
-
-    return complexity
+    return parts(codes, 2)
 
 
 def part_two():
     codes = parse_input("input2.txt")
+    return parts(codes, 25)
+
+
+def parts(codes, max_robots):
     numeric_codes = [int(code[:-1]) for code in codes]
-    max_robots = 25
     complexity = 0
-    for i, code in enumerate(codes):
-        print(code)
-        code = solve(Type.NUMERIC, max_robots, 0, tuple(code))
-        print(f"{len(code)} * {numeric_codes[i]}")
-        complexity += len(code) * numeric_codes[i]
+
+    for j, code in enumerate(codes):
+        # print(code)
+        total_len = 0
+        for i in range(len(code)):
+            total_len += solve_char(
+                Type.NUMERIC, max_robots, 0, "A" if i == 0 else code[i - 1], code[i]
+            )
+        # print(f"{total_len} * {numeric_codes[j]}")
+        complexity += total_len * numeric_codes[j]
 
     return complexity
 
 
 @cache
-def solve(type: Type, max_iter, iter, code):
+def solve_char(type: Type, max_iter, iter, current, dest):
     if iter > max_iter:
-        return code
+        return 1
 
-    current = get_key(type, "A")
+    current_key = get_key(type, current)
+    dest_key = get_key(type, dest)
+    possible_moves = get_movements(type, current_key, dest_key)
 
-    combined_code = ()
-    for c in code:
-        new = get_key(type, c)
-        moves = get_movements(current, new)
-        illegal_move = get_illegal_moves(type, current, new)
-        # print(type, c, current, new, moves, list(illegal_moves))
-        current = new
-
-        shortest_code = None
-        for perm in set(itertools.permutations(moves)):
-            if perm == illegal_move:
-                continue
-            perm += ("A",)
-            solved_perm = solve(Type.DIRECTIONAL, max_iter, iter + 1, perm)
-
-            if shortest_code == None:
-                shortest_code = solved_perm
-            elif len(solved_perm) < len(shortest_code):
-                shortest_code = solved_perm
-        combined_code += shortest_code
-
-    return combined_code
+    min_len = math.inf
+    for move in possible_moves:
+        move_len = 0
+        for i in range(len(move)):
+            move_len += solve_char(
+                Type.DIRECTIONAL,
+                max_iter,
+                iter + 1,
+                "A" if i == 0 else move[i - 1],
+                move[i],
+            )
+        min_len = min(min_len, move_len)
+    return min_len
 
 
 def get_key(type: Type, c):
@@ -104,67 +94,71 @@ def get_key(type: Type, c):
     return DIRECTIONAL[c]
 
 
-def get_movements(current, target):
-    movements = []
-
+def get_movements(type, current, target):
+    if current == target:
+        return ["A"]
     diff = sub(target, current)
     x, y = diff[0], diff[1]
 
+    x_moves, y_moves = "", ""
     if x > 0:
-        movements.append("v" * x)
+        x_moves += "v" * x
     elif x < 0:
-        movements.append("^" * abs(x))
+        x_moves += "^" * abs(x)
 
     if y > 0:
-        movements.append(">" * y)
+        y_moves += ">" * y
     elif y < 0:
-        movements.append("<" * abs(y))
+        y_moves += "<" * abs(y)
 
-    return "".join(movements)
+    illegal_moves = get_illegal_moves(type, current, target) + "A"
+    first_moves, second_moves = x_moves + y_moves + "A", y_moves + x_moves + "A"
+
+    if first_moves == second_moves:
+        return [first_moves]
+    if first_moves == illegal_moves:
+        return [second_moves]
+    if second_moves == illegal_moves:
+        return [first_moves]
+    return [first_moves, second_moves]
 
 
+# Ugly
 def get_illegal_moves(type, current, target):
     diff = sub(target, current)
     x, y = diff[0], diff[1]
+    movements = ""
 
     if type == Type.NUMERIC:
         if target[0] != 3 and current[0] == 3 and target[1] == 0:
-            movements = []
-
             if y > 0:
-                movements.append(">" * y)
+                movements += ">" * y
             elif y < 0:
-                movements.append("<" * abs(y))
-            movements.append("^" * abs(x))
-            return tuple("".join(movements))
+                movements += "<" * abs(y)
+            movements += "^" * abs(x)
+            return movements
         if target[0] == 3 and current[0] != 3 and current[1] == 0:
-            movements = []
-            movements.append("v" * abs(x))
-
+            movements += "v" * abs(x)
             if y > 0:
-                movements.append(">" * y)
+                movements += ">" * y
             elif y < 0:
-                movements.append("<" * abs(y))
-            return tuple(("".join(movements)))
+                movements += "<" * abs(y)
+            return movements
     elif type == Type.DIRECTIONAL:
         if target[0] != 0 and current[0] == 0 and target[1] == 0:
-            movements = []
-
             if y > 0:
-                movements.append(">" * y)
+                movements += ">" * y
             elif y < 0:
-                movements.append("<" * abs(y))
-            movements.append("v" * abs(x))
-            return tuple(("".join(movements)))
+                movements += "<" * abs(y)
+            movements += "v" * abs(x)
+            return movements
         if target[0] == 0 and current[0] != 0 and current[1] == 0:
-            movements = []
-            movements.append("^" * abs(x))
-
+            movements += "^" * abs(x)
             if y > 0:
-                movements.append(">" * y)
+                movements += ">" * y
             elif y < 0:
-                movements.append("<" * abs(y))
-            return tuple(("".join(movements)))
+                movements += "<" * abs(y)
+            return movements
     return ""
 
 
