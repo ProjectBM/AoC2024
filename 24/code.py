@@ -106,7 +106,7 @@ def part_two():
             if "z" in l[4]:
                 num_bits += 1
 
-    build_dependency_graph(vertices)
+    # build_dependency_graph(vertices)
     # find_problematic_bits(
     #     zero_incoming_degrees,
     #     vertices,
@@ -129,7 +129,6 @@ def find_problematic_bits(
     freq = defaultdict(int)
 
     for i in range(10000):
-        # print(i)
         random_bits_x = [int(digit) for digit in bin(random.getrandbits(max_bits))[2:]]
         random_bits_y = [int(digit) for digit in bin(random.getrandbits(max_bits))[2:]]
 
@@ -164,7 +163,7 @@ def find_problematic_bits(
         correct_sum = bin(x_num + y_num)[2:]
 
         if len(correct_sum) != len(incorrect_sum):
-            # print("Incorrect Lengths!")
+            print("Incorrect Lengths!")
             continue
         c_incorrect_bits = set()
         for k in range(len(correct_sum)):
@@ -200,7 +199,7 @@ def build_equation(vertices, c_vertex):
         return c_vertex
 
     vertex_node: AbstractNode = vertices[c_vertex]
-    return f"{build_equation(vertices, vertex_node.wire1)} {vertex_node.op} {build_equation(vertices, vertex_node.wire2)}"
+    return f"({build_equation(vertices, vertex_node.wire1)} {vertex_node.op} {build_equation(vertices, vertex_node.wire2)})"
 
 
 def top_sort(
